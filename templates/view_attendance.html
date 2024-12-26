@@ -1,0 +1,318 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View and download attendance logs from the facial recognition system.">
+    <meta name="keywords" content="attendance, facial recognition, log, download">
+    <title>View Attendance</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 0 10px;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode header {
+            background: linear-gradient(135deg, #1c62c4, #009688);
+        }
+
+        body.dark-mode footer {
+            background-color: #2d2d2d;
+            color: #bbb;
+        }
+
+        body.dark-mode .container {
+            background-color: #333;
+            color: #e0e0e0;
+        }
+
+        /* Video Background Styles */
+        video.background-video {
+            position: fixed; /* Fix the video in place */
+            top: 0;
+            left: 0;
+            width: 100vw; /* Use 100% of viewport width */
+            height: 100vh; /* Use 100% of viewport height */
+            object-fit: cover; /* Ensure the video covers the entire screen */
+            z-index: -1; /* Ensure the video stays behind the content */
+            pointer-events: none; /* Prevent the video from blocking interactions */
+        }
+
+        header {
+            background: linear-gradient(135deg, #0066cc, #00cc99);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: #0066cc;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Glassmorphism Effect */
+        .container {
+            position: relative;
+            max-width: 900px;
+            width: 100%;
+            margin: 30px auto;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.2); /* Semi-transparent white background */
+            border-radius: 15px;
+            backdrop-filter: blur(10px); /* Apply blur effect for frosted glass look */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Light border for definition */
+            color: #333; /* Dark text color by default */
+            transition: background 0.3s ease, backdrop-filter 0.3s ease; /* Smooth transition */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Vertically center content */
+            align-items: center; /* Horizontally center content */
+            text-align: center; /* Center align text */
+        }
+
+        .attendance-table {
+            font-size: 1.0rem; /* Increased font size */
+            line-height: 1.5; /* Increase line height for better readability */
+            color: #333;
+            margin-top: 20px;
+            max-width: 90%;
+            overflow-x: auto; /* In case the table is wide */
+        }
+
+        .attendance-table table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .attendance-table th, .attendance-table td {
+            padding: 15px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .attendance-table th {
+            background-color: #0066cc;
+            color: white;
+            font-weight: bold;
+        }
+
+        .attendance-table td {
+            background-color: #f9f9f9;
+        }
+
+        .attendance-table tr:nth-child(even) td {
+            background-color: #f1f1f1;
+        }
+
+        /* Button Container Styling */
+        .button-container {
+            display: flex;
+            justify-content: space-evenly;  /* Distribute buttons evenly */
+            gap: 15px;  /* Adds spacing between buttons */
+            margin-top: 20px;
+            flex-wrap: wrap; /* Allows wrapping of buttons on smaller screens */
+            width: 100%;
+        }
+
+        .download-btn, .go-home-btn, .dark-mode-toggle {
+            display: inline-block;
+            width: 100%; /* Ensures buttons take full width on smaller screens */
+            max-width: 250px; /* Ensures buttons don't grow larger than 250px */
+            padding: 10px 25px; /* Reduced vertical padding (height) */
+            font-size: 1.2rem; /* Slightly larger font size */
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            border: none;
+        }
+
+        .download-btn:hover, .go-home-btn:hover, .dark-mode-toggle:hover {
+            background-color: #004d99;
+            transform: translateY(-3px);
+        }
+
+        .download-btn:active, .go-home-btn:active, .dark-mode-toggle:active {
+            background-color: #003366;
+        }
+
+        body.dark-mode .dark-mode-toggle {
+            background-color: #555;
+            color: #fff;
+        }
+
+        body.dark-mode .dark-mode-toggle:hover {
+            background-color: #777;
+        }
+
+        /* Dark Mode Adjustments */
+        body.dark-mode .container {
+            background-color: rgba(0, 0, 0, 0.7); /* Darker background in dark mode */
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #e0e0e0; /* Light text color in dark mode */
+        }
+
+        footer {
+            background-color: #2d2d2d;
+            color: #ccc;
+            text-align: center;
+            padding: 20px 0;
+            width: 100%;
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: auto;
+        }
+
+        footer p {
+            font-size: 1rem;
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media screen and (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .attendance-table {
+                font-size: 1.3rem; /* Slightly smaller font on smaller screens */
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .button-container {
+                flex-direction: column; /* Stacks buttons vertically on smaller screens */
+                align-items: center;
+                width: 100%;
+            }
+
+            .download-btn, .go-home-btn, .dark-mode-toggle {
+                width: 100%; /* Ensures buttons take full width in smaller screens */
+                max-width: 250px; /* Optional: restricts max width to 250px */
+                margin-bottom: 10px; /* Adds spacing between buttons */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Video Background -->
+    <video class="background-video" autoplay muted loop poster="{{ url_for('static', filename='images/fallback-image.jpg') }}">
+        <source src="{{ url_for('static', filename='videos/wallpaper.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <header>
+        <h1>Face Recognition Attendance System</h1>
+    </header>
+
+    <div class="container">
+        {% if message %}
+        <div class="message {{ message_type }}">
+            <p>{{ message }}</p>
+        </div>
+        {% else %}
+        {% if tables %}
+        <h2>ATTENDANCE LOG DATA</h2>
+        <div class="attendance-table">
+            {{ tables|safe }}
+        </div>
+        {% else %}
+        <div class="message no-data">
+            <p>No attendance records available.</p>
+        </div>
+        {% endif %}
+        <div class="button-container">
+            <a href="{{ url_for('download_attendance') }}" class="download-btn" aria-label="Download Attendance Log">
+                <i class="fas fa-download"></i> Save Log
+            </a>
+            <a href="{{ url_for('home') }}" class="go-home-btn" aria-label="Go to Home">
+                <i class="fas fa-home"></i> Go to Home
+            </a>
+            <button class="dark-mode-toggle" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">
+                <i class="fas fa-adjust"></i> Toggle Dark Mode
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Face Recognition Attendance System | Developed by Debmalya Ray</p>
+    </footer>
+
+    <script>
+        // Prevent the user from going back using the browser's back button
+        window.history.pushState(null, null, window.location.href);
+        window.onpopstate = function() {
+            window.history.pushState(null, null, window.location.href);
+        };
+
+        // Confirmation on trying to leave the page
+        window.onbeforeunload = function(event) {
+            const message = "Are you sure you want to leave this page? Any unsaved changes may be lost.";
+            event.returnValue = message;  // Standard for most browsers
+            return message;  // For older browsers
+        };
+
+        // Dark Mode Toggle Logic
+        if(localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+        }
+
+        function toggleDarkMode() {
+            const isDarkMode = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+        }
+    </script>
+</body>
+</html>
+
+
+
