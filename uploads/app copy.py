@@ -1,17 +1,21 @@
 
 
+
+
+
 import os
 import cv2
 import numpy as np
 from datetime import datetime
 import face_recognition
-from flask import Flask, render_template, Response, request, redirect, url_for, send_file, session
+from flask import Flask, render_template, Response, request, redirect, url_for, send_file, session, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 import pandas as pd
 from PIL import Image
 import logging
 from dotenv import load_dotenv
+from flask_socketio import SocketIO, emit
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +29,7 @@ logging.basicConfig(
 
 # Initialize Flask app
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 # Secret key for session management
 app.secret_key = os.urandom(24)
@@ -61,10 +66,10 @@ def load_known_faces():
 
 known_faces, known_names = load_known_faces()
 
-# Initialize Flask routes
 @app.route('/')
 def home():
     return render_template('index.html')
+
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
@@ -125,6 +130,78 @@ def mark_attendance():
     
     return render_template('mark_attendance.html', known_names=known_names)
 
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+# Function to generate video frames and send face recognition data via SocketIO
+def generate_frames():
+    video_capture = cv2.VideoCapture(0)
+    while True:
+        ret, frame = video_capture.read()
+        if not ret:
+            break
+
+        # Resize the frame for faster processing (optional)
+        frame = cv2.resize(frame, (640, 480))
+
+        # Process the frame and recognize faces
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        face_locations = face_recognition.face_locations(rgb_frame)
+        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+
+        detected_name = "Unknown"
+        for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+            matches = face_recognition.compare_faces(known_faces, face_encoding)
+
+            if True in matches:
+                first_match_index = matches.index(True)
+                detected_name = known_names[first_match_index]
+
+            # Draw rectangles around faces and label them
+            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+            cv2.putText(frame, detected_name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
+
+        # Emit the detected name to the client via WebSocket
+        socketio.emit('detected_face', detected_name)
+
+        # Encode the frame in JPEG format
+        ret, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
+
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
+def mark_attendance_in_csv(name, action="entry"):
+    if not os.path.exists(attendance_file):
+        with open(attendance_file, "w", newline="") as f:
+            f.write("Serial Number,Name,Time,Action\n")  # Write header with action column for punch-in/out
+
+    try:
+        df = pd.read_csv(attendance_file)
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        if 'Name' not in df.columns or 'Time' not in df.columns:
+            raise KeyError("Missing required columns in the attendance file.")
+        
+        if any((df['Name'] == name) & (df['Time'].str.contains(today))):
+            logging.info(f"Attendance already marked for {name} today.")
+            return
+        
+    except (pd.errors.EmptyDataError, KeyError):
+        df = pd.DataFrame(columns=["Serial Number", "Name", "Time", "Action"])
+        today = datetime.now().strftime('%Y-%m-%d')
+
+    serial_number = len(df) + 1
+    with open(attendance_file, "a", newline="") as f:
+        f.write(f"{serial_number},{name},{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},{action}\n")
+        logging.info(f"Attendance marked for {name} with action {action}")
+
+@app.route('/mark-attendance')
+def mark_attendance_page():
+    return render_template('mark_attendance.html', known_names=known_names)
+
+# New route to register face
 @app.route('/register-face', methods=["GET", "POST"])
 def register_face():
     # Ensure that the user is logged in before accessing the register face page
@@ -169,6 +246,8 @@ def register_face():
         return render_template('register_face.html', message="Please provide both a valid image and a name.", msg_type="warning")
     
     return render_template('register_face.html')
+
+
 
 @app.route('/view-attendance')
 def view_attendance():
@@ -224,78 +303,20 @@ def delete_face():
     return render_template('delete_face.html', known_names=known_names)
 
 
-def mark_attendance_in_csv(name, action="entry"):
-    # Check if the attendance file exists, if not create it with header
-    if not os.path.exists(attendance_file):
-        with open(attendance_file, "w", newline="") as f:
-            f.write("Serial Number,Name,Time,Action\n")  # Write header with action column for punch-in/out
 
-    # Prevent duplicate attendance for the same day
-    try:
-        df = pd.read_csv(attendance_file)
-        today = datetime.now().strftime('%Y-%m-%d')
-        
-        # Ensure the file has the correct columns
-        if 'Name' not in df.columns or 'Time' not in df.columns:
-            raise KeyError("Missing required columns in the attendance file.")
-        
-        if any((df['Name'] == name) & (df['Time'].str.contains(today))):  # Check for duplicate attendance
-            logging.info(f"Attendance already marked for {name} today.")
-            return  # Skip marking attendance if already marked for the day
-    except (pd.errors.EmptyDataError, KeyError):
-        # Handle the case where the file is empty or doesn't have the required columns
-        df = pd.DataFrame(columns=["Serial Number", "Name", "Time", "Action"])
-        today = datetime.now().strftime('%Y-%m-%d')
-    
-    # Generate serial number for the new entry
-    serial_number = len(df) + 1
 
-    # Write attendance entry to the CSV
-    with open(attendance_file, "a", newline="") as f:
-        f.write(f"{serial_number},{name},{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},{action}\n")
-        logging.info(f"Attendance marked for {name} with action {action}")
+# WebSocket to handle incoming data
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
 
-# Video stream generation
-def generate_frames():
-    video_capture = cv2.VideoCapture(0)
-    while True:
-        ret, frame = video_capture.read()
-        if not ret:
-            break
-
-        # Resize the frame for faster processing (optional)
-        frame = cv2.resize(frame, (640, 480))
-
-        # Process the frame and recognize faces
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        face_locations = face_recognition.face_locations(rgb_frame)
-        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
-
-        for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-            matches = face_recognition.compare_faces(known_faces, face_encoding)
-
-            name = "Unknown"
-            if True in matches:
-                first_match_index = matches.index(True)
-                name = known_names[first_match_index]
-
-            # Draw rectangles around faces and label them
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-            cv2.putText(frame, name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
-
-        # Encode the frame in JPEG format
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-
-@app.route('/video_feed')
-def video_feed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+
 
 
 

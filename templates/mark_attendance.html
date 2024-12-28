@@ -1,4 +1,7 @@
 
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -301,14 +304,20 @@
         <p>&copy; 2024 Face Recognition Attendance System | Developed by Debmalya Ray</p>
     </footer>
 
-    <script>
-        // Prevent the back button
-        window.history.pushState(null, document.title, window.location.href);
-        window.onpopstate = function () {
-            window.history.pushState(null, document.title, window.location.href);
-        };
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
 
-        // Toggle Dark Mode and persist preference in localStorage
+    <script>
+        // Connect to WebSocket server for face detection events
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        // Listen for the detected face event
+        socket.on('detected_face', function(name) {
+            if (name !== "Unknown") {
+                document.getElementById('name').value = name;
+            }
+        });
+
+        // Dark Mode functionality
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
             localStorage.setItem('darkMode', document.body.classList.contains('dark-mode') ? 'enabled' : 'disabled');
@@ -323,5 +332,11 @@
 </body>
 
 </html>
+
+
+
+
+
+
 
 
