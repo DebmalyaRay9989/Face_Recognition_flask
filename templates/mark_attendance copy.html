@@ -36,14 +36,14 @@
 
         /* Video Background Styles */
         video.background-video {
-            position: fixed; 
+            position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
             object-fit: cover;
             z-index: -1;
-            pointer-events: none; 
+            pointer-events: none;
         }
 
         /* Header Styles */
@@ -74,11 +74,11 @@
             width: 100%;
             margin: 30px auto;
             padding: 30px;
-            background: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
-            backdrop-filter: blur(10px); /* Frosted glass effect */
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
             border-radius: 15px;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-            color: white; 
+            color: white;
         }
 
         h2 {
@@ -240,6 +240,10 @@
                 min-width: 100%;
                 flex: none;
             }
+
+            main {
+                padding: 20px;
+            }
         }
 
     </style>
@@ -258,9 +262,9 @@
     </header>
 
     <main>
-        <h2>MARK ATTENDANCE</h2>
+        <h2>Mark Attendance</h2>
 
-        <form method="POST">
+        <form method="POST" id="attendanceForm" onsubmit="return validateForm()">
             <div class="form-group">
                 <label for="name">Select Name:</label>
                 <select name="name" id="name" aria-label="Select a name from the list of known faces" required>
@@ -290,7 +294,7 @@
     </div>
 
     <div class="button-container">
-        <a href="/" class="btn-go-home">
+        <a href="/" class="btn-go-home" aria-label="Go to the home page">
             <i class="fas fa-home"></i> Go to Home
         </a>
         <button onclick="toggleDarkMode()" title="Toggle Dark Mode" aria-label="Toggle Dark Mode">
@@ -325,13 +329,22 @@
         if (localStorage.getItem('darkMode') === 'enabled') {
             document.body.classList.add('dark-mode');
         }
+
+        // Simple Form Validation
+        function validateForm() {
+            const nameSelect = document.getElementById('name');
+            const actionSelect = document.getElementById('action');
+            if (!nameSelect.value || !actionSelect.value) {
+                alert("Please fill in all fields before submitting.");
+                return false;
+            }
+            return true;
+        }
     </script>
 
 </body>
 
 </html>
-
-
 
 
 

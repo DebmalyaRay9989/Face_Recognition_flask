@@ -17,7 +17,7 @@ streamlit==1.23.1
 pyinstaller==5.13.0
 numpy
 pandas
-klib
+gevent==24.11.1
 Flask-SocketIO==5.5.0
 pickleshare==0.7.5
 requests==2.24.0

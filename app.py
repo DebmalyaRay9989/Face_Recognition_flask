@@ -1,7 +1,4 @@
 
-
-
-
 import os
 import cv2
 import numpy as np
@@ -46,12 +43,12 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')  # Default to 'admin' if not set in .env
 ADMIN_PASSWORD_HASH = os.getenv('ADMIN_PASSWORD_HASH', generate_password_hash('password123'))
 
-# Load known faces and names
+# Load the known faces and their names (assumed to be done before this function)
+known_faces = []
+known_names = []
+
 def load_known_faces():
-    known_faces = []
-    known_names = []
-    if not os.path.exists(KNOWN_FACES_FOLDER):
-        os.makedirs(KNOWN_FACES_FOLDER)
+    # Load known faces from directory or other source and compute face encodings once
     for filename in os.listdir(KNOWN_FACES_FOLDER):
         if filename.endswith(".jpg") or filename.endswith(".png"):
             img_path = os.path.join(KNOWN_FACES_FOLDER, filename)
@@ -60,15 +57,13 @@ def load_known_faces():
             face_encodings = face_recognition.face_encodings(rgb_img)
             if face_encodings:
                 known_faces.append(face_encodings[0])
-                known_names.append(filename.split('.')[0])  # Name is the file name without extension
-    return known_faces, known_names
+                known_names.append(filename.split('.')[0])
 
-known_faces, known_names = load_known_faces()
+load_known_faces()
 
 @app.route('/')
 def home():
     return render_template('index.html')
-
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
@@ -87,90 +82,72 @@ def login():
     
     return render_template('login.html')
 
-@app.route('/login2', methods=["GET", "POST"])
-def login2():
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-
-        # Check if the provided credentials are correct
-        if username == ADMIN_USERNAME and check_password_hash(ADMIN_PASSWORD_HASH, password):
-            session['logged_in'] = True
-            logging.info(f"Admin logged in: {username}")
-            return redirect(url_for('delete_face'))  # Redirect to register face page
-        else:
-            logging.warning(f"Failed login attempt: {username}")
-            return render_template('login.html', error="Invalid credentials")
-    
-    return render_template('login.html')
-
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)  # Remove the 'logged_in' session key
     logging.info("Admin logged out.")
     return redirect(url_for('login'))  # Redirect to login page after logout
 
-@app.route('/mark-attendance', methods=["GET", "POST"])
-def mark_attendance():
-    # This route is now accessible without login
-    if request.method == "POST":
-        # Handle attendance marking
-        name = request.form.get('name')
-        action = request.form.get('action')
-
-        # Ensure that both 'name' and 'action' are selected
-        if not name or not action:
-            return render_template("mark_attendance.html", known_names=known_names, error="Please select both name and action.")
-        
-        # Mark attendance
-        mark_attendance_in_csv(name, action)
-        logging.info(f"Attendance marked for {name} with action {action}")
-        return render_template("mark_attendance.html", known_names=known_names, action=action, name=name)
-    
-    return render_template('mark_attendance.html', known_names=known_names)
 
 @app.route('/video_feed')
 def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-# Function to generate video frames and send face recognition data via SocketIO
 def generate_frames():
     video_capture = cv2.VideoCapture(0)
+    frame_interval = 5  # Process every 5th frame to reduce CPU usage
+    frame_count = 0
+    last_detected_name = None  # To track the last detected name
+
     while True:
         ret, frame = video_capture.read()
         if not ret:
             break
 
-        # Resize the frame for faster processing (optional)
-        frame = cv2.resize(frame, (640, 480))
+        frame_count += 1
+        
+        # Only process every 5th frame to reduce CPU usage
+        if frame_count % frame_interval != 0:
+            continue
 
-        # Process the frame and recognize faces
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        face_locations = face_recognition.face_locations(rgb_frame)
+        # Resize the frame to reduce processing time (smaller frame)
+        frame_resized = cv2.resize(frame, (640, 480))  # Reduce resolution
+
+        # Convert to RGB (required by face_recognition)
+        rgb_frame = cv2.cvtColor(frame_resized, cv2.COLOR_BGR2RGB)
+
+        # Detect faces in the frame (using HOG for faster processing)
+        face_locations = face_recognition.face_locations(rgb_frame, model="hog")
+
+        # Encode faces in the frame
         face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
 
         detected_name = "Unknown"
         for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+            # Compare the face encoding with known faces
             matches = face_recognition.compare_faces(known_faces, face_encoding)
 
             if True in matches:
                 first_match_index = matches.index(True)
                 detected_name = known_names[first_match_index]
 
-            # Draw rectangles around faces and label them
+            # Draw rectangle around face and display the name
             cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
             cv2.putText(frame, detected_name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
 
-        # Emit the detected name to the client via WebSocket
-        socketio.emit('detected_face', detected_name)
+        # Emit the detected name only if it has changed
+        if detected_name != last_detected_name:
+            socketio.emit('detected_face', detected_name)
+            last_detected_name = detected_name
 
-        # Encode the frame in JPEG format
+        # Encode the frame in JPEG format to send it via the video feed
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
 
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-
+        
+# Function to mark attendance
 def mark_attendance_in_csv(name, action="entry"):
     if not os.path.exists(attendance_file):
         with open(attendance_file, "w", newline="") as f:
@@ -196,19 +173,36 @@ def mark_attendance_in_csv(name, action="entry"):
         f.write(f"{serial_number},{name},{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},{action}\n")
         logging.info(f"Attendance marked for {name} with action {action}")
 
+
 @app.route('/mark-attendance')
 def mark_attendance_page():
     return render_template('mark_attendance.html', known_names=known_names)
 
-# New route to register face
+@app.route('/mark-attendance', methods=["GET", "POST"])
+def mark_attendance():
+    # This route is now accessible without login
+    if request.method == "POST":
+        # Handle attendance marking
+        name = request.form.get('name')
+        action = request.form.get('action')
+
+        # Ensure that both 'name' and 'action' are selected
+        if not name or not action:
+            return render_template("mark_attendance.html", known_names=known_names, error="Please select both name and action.")
+        
+        # Mark attendance
+        mark_attendance_in_csv(name, action)
+        logging.info(f"Attendance marked for {name} with action {action}")
+        return render_template("mark_attendance.html", known_names=known_names, action=action, name=name)
+    
+    return render_template('mark_attendance.html', known_names=known_names)
+
 @app.route('/register-face', methods=["GET", "POST"])
 def register_face():
-    # Ensure that the user is logged in before accessing the register face page
     if 'logged_in' not in session:
         return redirect(url_for('login'))  # Redirect to login page if not logged in
     
     if request.method == "POST":
-        # Handle face registration
         file = request.files['image']
         name = request.form.get('name')
 
@@ -246,8 +240,6 @@ def register_face():
     
     return render_template('register_face.html')
 
-
-
 @app.route('/view-attendance')
 def view_attendance():
     if os.path.exists(attendance_file):
@@ -262,7 +254,7 @@ def download_attendance():
         return send_file(attendance_file, as_attachment=True)
     else:
         return redirect(url_for('view_attendance'))
-
+    
 @app.route('/delete-face', methods=["GET", "POST"])
 def delete_face():
     # Ensure that the user is logged in before accessing the delete face page
@@ -302,8 +294,6 @@ def delete_face():
     return render_template('delete_face.html', known_names=known_names)
 
 
-
-
 # WebSocket to handle incoming data
 @socketio.on('connect')
 def handle_connect():
@@ -313,12 +303,9 @@ def handle_connect():
 def handle_disconnect():
     print('Client disconnected')
 
+# Start the Flask application
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
-
-
-
-
 
 
 

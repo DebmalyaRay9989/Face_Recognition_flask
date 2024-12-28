@@ -1,8 +1,6 @@
 
 
 
-
-
 import os
 import cv2
 import numpy as np
@@ -14,6 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import pandas as pd
 from PIL import Image
 import logging
+import time
 from dotenv import load_dotenv
 from flask_socketio import SocketIO, emit
 
@@ -137,13 +136,23 @@ def video_feed():
 # Function to generate video frames and send face recognition data via SocketIO
 def generate_frames():
     video_capture = cv2.VideoCapture(0)
+    frame_interval = 5  # Process every 5th frame to reduce CPU usage
+    frame_count = 0
+    last_detected_name = None  # To track the last detected name and only emit if it changes
+
     while True:
         ret, frame = video_capture.read()
         if not ret:
             break
 
+        frame_count += 1
+        
+        # Only process every 5th frame to reduce CPU usage
+        if frame_count % frame_interval != 0:
+            continue
+
         # Resize the frame for faster processing (optional)
-        frame = cv2.resize(frame, (640, 480))
+        frame = cv2.resize(frame, (640, 480))  # Smaller resolution for faster processing
 
         # Process the frame and recognize faces
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -162,8 +171,10 @@ def generate_frames():
             cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
             cv2.putText(frame, detected_name, (left + 6, bottom - 6), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 1)
 
-        # Emit the detected name to the client via WebSocket
-        socketio.emit('detected_face', detected_name)
+        # Emit the detected name only if it has changed from the last frame
+        if detected_name != last_detected_name:
+            socketio.emit('detected_face', detected_name)
+            last_detected_name = detected_name
 
         # Encode the frame in JPEG format
         ret, buffer = cv2.imencode('.jpg', frame)
@@ -316,6 +327,7 @@ def handle_disconnect():
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+
 
 
 
