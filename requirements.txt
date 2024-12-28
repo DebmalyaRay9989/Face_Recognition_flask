@@ -14,7 +14,6 @@ joblib>=1.2.0
 jsonify==0.5
 MarkupSafe>=2.0
 streamlit==1.23.1
-pyinstaller==5.13.0
 numpy
 pandas
 gevent==24.11.1
