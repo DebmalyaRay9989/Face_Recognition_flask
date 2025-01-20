@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Attendance System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        /* Global Reset and Body Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 0 10px;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            position: relative;
+        }
+
+        /* Video Background Styles */
+        video.background-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        /* Header Styles */
+        header {
+            background: linear-gradient(135deg, #0066cc, #00cc99);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Card Container Layout */
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);  /* 2 columns */
+            grid-template-rows: repeat(2, 1fr);     /* 2 rows */
+            gap: 15px;  /* Reduced gap between cards */
+            max-width: 600px;  /* Smaller container width */
+            margin: 0 auto;
+            padding: 15px;
+            width: 100%;
+            height: 350px;  /* Adjusted height for the container */
+        }
+
+        /* Individual Cards */
+        .card {
+            background: rgba(255, 255, 255, 0.1); /* Glassmorphism */
+            backdrop-filter: blur(10px); /* Frosted glass effect */
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: #495057;
+            height: 100%;
+        }
+
+        /* Card Hover Effect */
+        .card:hover {
+            transform: translateY(-8px) rotateY(10deg); /* 3D effect */
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card i {
+            font-size: 2.5rem;
+            color: #007bff;
+            margin-bottom: 15px;
+            transition: color 0.3s ease;
+        }
+
+        .card:hover i {
+            color: #28a745; /* Change icon color on hover */
+        }
+
+        .card h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #007bff;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .card-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+                height: auto;
+            }
+
+            header {
+                font-size: 2.2rem;
+            }
+
+            .card {
+                width: 90%;
+                padding: 25px 15px;
+            }
+
+            .card h3 {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Footer Styles */
+        footer {
+            background-color: #2d2d2d;
+            color: #ccc;
+            text-align: center;
+            padding: 20px 0;
+            width: 100%;
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: auto;
+        }
+
+        footer p {
+            font-size: 1rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Video Background -->
+    <video class="background-video" autoplay muted loop>
+        <source src="{{ url_for('static', filename='videos/wallpaper.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <header>
+        <h1>Face Recognition Attendance System</h1>
+    </header>
+
+    <!-- Card Container -->
+    <div class="card-container">
+        <!-- Mark Attendance Card -->
+        <div class="card" onclick="window.location.href='{{ url_for('mark_attendance') }}'" aria-label="Mark Attendance">
+            <i class="fas fa-check-circle"></i>
+            <h3>Mark Attendance</h3>
+        </div>
+
+        <!-- Register New Face Card -->
+        <div class="card" onclick="window.location.href='{{ url_for('register_face') }}'" aria-label="Register New Face">
+            <i class="fas fa-user-plus"></i>
+            <h3>Register New Face</h3>
+        </div>
+
+        <!-- View Attendance Card -->
+        <div class="card" onclick="window.location.href='{{ url_for('view_attendance') }}'" aria-label="View Attendance">
+            <i class="fas fa-list"></i>
+            <h3>View Attendance</h3>
+        </div>
+
+        <!-- Delete Registered Face Card -->
+        <div class="card" onclick="window.location.href='{{ url_for('delete_face') }}'" aria-label="Delete Registered Face">
+            <i class="fas fa-user-times"></i>
+            <h3>Delete Registered Face</h3>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Face Recognition Attendance System | Developed by Debmalya Ray</p>
+    </footer>
+
+</body>
+</html>
+
+
