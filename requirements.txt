@@ -21,7 +21,7 @@ klib
 pickleshare==0.7.5
 requests==2.24.0
 scipy
-scikit-learn
+scikit-learn==1.2.2
 urllib3==1.25.9
 Werkzeug==1.0.1
 wincertstore==0.2
