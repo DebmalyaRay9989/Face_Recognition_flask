@@ -17,7 +17,7 @@ numpy==1.26.4  # Updated to a compatible version
 pandas==2.1.2  # Updated to a compatible version
 pickleshare==0.7.5
 requests==2.28.1  # Updated to a compatible version
-scipy==1.10.1  # Updated to a compatible version
+scipy==1.14.1  # Updated to a compatible version
 scikit-learn==1.5.1
 urllib3==1.26.15  # Updated to a compatible version
 Werkzeug==2.2.3  # Updated to a compatible version
