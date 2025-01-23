@@ -1,0 +1,352 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mark attendance using facial recognition with live feed for monitoring.">
+    <meta name="keywords" content="attendance, facial recognition, live feed, mark attendance">
+    <title>Face Recognition Attendance System</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+    <style>
+        /* Global Reset and Body Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Video Background Styles */
+        video.background-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Header Styles */
+        header {
+            background: linear-gradient(135deg, #0066cc, #00cc99);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Glassmorphism (Frosted Glass Effect) */
+        main {
+            max-width: 900px;
+            width: 100%;
+            margin: 30px auto;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
+            backdrop-filter: blur(10px); /* Frosted glass effect */
+            border-radius: 15px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: #0066cc;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Form Group Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        select,
+        button {
+            padding: 10px;
+            width: 100%;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 2px solid #0066cc;
+            margin-top: 8px;
+            background-color: #fff;
+            color: #333;
+            transition: background-color 0.3s ease, border 0.3s ease;
+        }
+
+        select:hover,
+        button:hover {
+            background-color: #f1f1f1;
+            border-color: #00cc99;
+            color: #0066cc;
+        }
+
+        button {
+            background-color: #0066cc;
+            color: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: transform 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Live Feed Section */
+        .live-feed-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .live-feed-container img {
+            max-width: 100%;
+            border: 5px solid #0066cc;
+            border-radius: 8px;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            background-color: #333;
+            color: #fff;
+        }
+
+        body.dark-mode header {
+            background-color: #333;
+            color: white;
+        }
+
+        body.dark-mode main {
+            background-color: #444;
+            color: #fff;
+        }
+
+        body.dark-mode select,
+        body.dark-mode button {
+            background-color: #555;
+            border-color: #666;
+            color: #fff;
+        }
+
+        body.dark-mode select:hover,
+        body.dark-mode button:hover {
+            background-color: #777;
+        }
+
+        /* Footer Styles */
+        footer {
+            background-color: #2d2d2d;
+            color: #ccc;
+            text-align: center;
+            padding: 20px 0;
+            width: 100%;
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: auto;
+        }
+
+        footer p {
+            font-size: 1rem;
+        }
+
+        /* Flexbox Layout for Buttons */
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 20px;
+            margin-bottom: 40px;
+            width: 60%;
+            align-items: center;
+        }
+
+        .button-container a,
+        .button-container button {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: 2px solid #0066cc;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            text-align: center;
+            flex: 1;
+            min-width: 200px;
+            height: 60px;
+        }
+
+        .button-container a:hover,
+        .button-container button:hover {
+            background-color: #00cc99;
+            border-color: #00cc99;
+            transform: translateY(-5px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .button-container a:focus,
+        .button-container button:focus {
+            outline: 3px solid #ffcc00;
+        }
+
+        /* Mobile Responsiveness */
+        @media screen and (max-width: 768px) {
+            .button-container {
+                width: 100%;
+                gap: 10px;
+            }
+
+            .button-container a,
+            .button-container button {
+                min-width: 100%;
+                flex: none;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- Video Background -->
+    <video class="background-video" autoplay muted loop poster="{{ url_for('static', filename='images/fallback-image.jpg') }}">
+        <source src="{{ url_for('static', filename='videos/wallpaper.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <header>
+        <h1>Face Recognition Attendance System</h1>
+    </header>
+
+    <main>
+        <h2>MARK ATTENDANCE</h2>
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="name">Select Name:</label>
+                <select name="name" id="name" aria-label="Select a name from the list of known faces" required>
+                    {% for name in known_names %}
+                        <option value="{{ name }}">{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="action">Action:</label>
+                <select name="action" id="action" aria-label="Select the action to mark attendance" required>
+                    <option value="entry">Entry</option>
+                    <option value="exit">Exit</option>
+                </select>
+            </div>
+
+            <button type="submit" aria-label="Submit the attendance form">
+                <i class="fas fa-check-circle"></i> Mark Attendance
+            </button>
+        </form>
+    </main>
+
+    <div class="live-feed-container">
+        <h2>Live Feed:</h2>
+        <img src="{{ url_for('video_feed') }}" alt="Live video feed of attendance system" id="liveFeedImage">
+    </div>
+
+    <div class="button-container">
+        <a href="/" class="btn-go-home">
+            <i class="fas fa-home"></i> Go to Home
+        </a>
+        <button onclick="toggleDarkMode()" title="Toggle Dark Mode" aria-label="Toggle Dark Mode">
+            <i class="fas fa-moon"></i> Toggle Dark Mode
+        </button>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Face Recognition Attendance System | Developed by Debmalya Ray</p>
+    </footer>
+
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+
+    <script>
+        // SocketIO client-side connection
+        const socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        // Listen for the 'face_recognized' event
+        socket.on('face_recognized', function(data) {
+            const name = data.name;
+            if (name) {
+                updateDropdown(name);
+            }
+        });
+
+        // Function to update the dropdown with the recognized name
+        function updateDropdown(name) {
+            const dropdown = document.getElementById("name");
+            for (let i = 0; i < dropdown.options.length; i++) {
+                if (dropdown.options[i].value === name) {
+                    dropdown.options[i].selected = true;  // Auto-select the name
+                    break;
+                }
+            }
+        }
+
+        // Prevent the back button
+        window.history.pushState(null, document.title, window.location.href);
+        window.onpopstate = function () {
+            window.history.pushState(null, document.title, window.location.href);
+        };
+
+        // Toggle Dark Mode and persist preference in localStorage
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode') ? 'enabled' : 'disabled');
+        }
+
+        // Apply Dark Mode on page load if previously enabled
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+
+</body>
+
+</html>
+
+
+

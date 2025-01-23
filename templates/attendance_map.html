@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View and download attendance logs from the facial recognition system.">
+    <meta name="keywords" content="attendance, facial recognition, log, download">
+    <title>ATTENDANCE LOCATIONS ON MAP</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    
+    <!-- Custom CSS Styling -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 0 10px;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode header {
+            background: linear-gradient(135deg, #1c62c4, #009688);
+        }
+
+        body.dark-mode footer {
+            background-color: #2d2d2d;
+            color: #bbb;
+        }
+
+        body.dark-mode .container {
+            background-color: #333;
+            color: #e0e0e0;
+        }
+
+        /* Video Background Styles */
+        video.background-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+            color: white;
+        }
+
+        #map {
+            height: 500px;
+            width: 100%;
+            border: 2px solid #ccc;
+            margin: 20px auto;
+        }
+
+        .container {
+            position: relative;
+            max-width: 900px;
+            width: 100%;
+            margin: 30px auto;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.2); /* Semi-transparent white background */
+            border-radius: 15px;
+            backdrop-filter: blur(10px); /* Apply blur effect for frosted glass look */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            border: 1px solid rgba(255, 255, 255, 0.3); /* Light border for definition */
+            color: #333; /* Dark text color by default */
+            transition: background 0.3s ease, backdrop-filter 0.3s ease; /* Smooth transition */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Vertically center content */
+            align-items: center; /* Horizontally center content */
+            text-align: center; /* Center align text */
+        }
+
+        .message {
+            text-align: center;
+            color: #e74c3c;
+            font-size: 1.2em;
+        }
+
+        .location-popup b {
+            color: #2c3e50;
+        }
+
+        /* Button Container Styling */
+        .button-container {
+            display: flex;
+            justify-content: space-evenly;  /* Distribute buttons evenly */
+            gap: 15px;  /* Adds spacing between buttons */
+            margin-top: 20px;
+            flex-wrap: wrap; /* Allows wrapping of buttons on smaller screens */
+            width: 100%;
+        }
+
+        footer {
+            background-color: #2d2d2d;
+            color: #ccc;
+            text-align: center;
+            padding: 20px 0;
+            width: 100%;
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: auto;
+        }
+
+        footer p {
+            font-size: 1rem;
+        }
+
+        /* Button Styling */
+        .button-container a, .button-container button {
+            background-color: #2980b9;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .button-container a:hover, .button-container button:hover {
+            background-color: #1c6f94;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Video Background -->
+    <video class="background-video" autoplay muted loop>
+        <source src="{{ url_for('static', filename='videos/wallpaper.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <div class="container">
+        <h1>ATTENDANCE LOCATIONS ON MAP</h1>
+
+        {% if message %}
+            <p class="message">{{ message }}</p>
+        {% endif %}
+
+        <div id="map"></div>
+
+        <div class="button-container">
+            <a href="{{ url_for('download_attendance') }}" class="download-btn" aria-label="Download Attendance Log">
+                <i class="fas fa-download"></i> Save Log
+            </a>
+            <a href="{{ url_for('home') }}" class="go-home-btn" aria-label="Go to Home">
+                <i class="fas fa-home"></i> Go to Home
+            </a>
+            <button class="dark-mode-toggle" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">
+                <i class="fas fa-adjust"></i> Toggle Dark Mode
+            </button>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Face Recognition Attendance System | Developed by Debmalya Ray</p>
+    </footer>
+
+    <script>
+        // Prevent the user from going back using the browser's back button
+        window.history.pushState(null, null, window.location.href);
+        window.onpopstate = function() {
+            window.history.pushState(null, null, window.location.href);
+        };
+
+        // Confirmation on trying to leave the page
+        window.onbeforeunload = function(event) {
+            const message = "Are you sure you want to leave this page? Any unsaved changes may be lost.";
+            event.returnValue = message;  // Standard for most browsers
+            return message;  // For older browsers
+        };
+
+        // Dark Mode Toggle Logic
+        if(localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+        }
+
+        function toggleDarkMode() {
+            const isDarkMode = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+        }
+
+        var map = L.map('map').setView([51.505, -0.09], 2);  // Default view set to latitude 51.505, longitude -0.09
+
+        // OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Dynamic locations passed from Flask (using Jinja2 to inject Python data)
+        var locations = {{ locations | tojson }};  // Convert Python list to JSON
+
+        locations.forEach(function(location) {
+            L.marker([location.lat, location.lon])
+                .bindPopup("<b>" + location.name + "</b><br>" + location.city + ", " + location.country)
+                .addTo(map);
+        });
+    </script>
+
+</body>
+</html>
+
+
+
+

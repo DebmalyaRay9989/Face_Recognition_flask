@@ -1,0 +1,392 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Quicksand:wght@300;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <style>
+        /* Global Reset and Body Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 0 10px;
+            justify-content: center; /* Center content vertically */
+            align-items: center; /* Center content horizontally */
+            transition: background-color 0.3s ease, color 0.3s ease;
+            position: relative; /* Ensure content overlays the video */
+        }
+
+        /* Video Background Styles */
+        video.background-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Make the video cover the entire viewport */
+            z-index: -1; /* Send the video behind the content */
+        }
+
+        /* Header Styles */
+        header {
+            background: linear-gradient(135deg, #0066cc, #00cc99);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: #0066cc;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Login Container */
+        .login-container {
+            color: white;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
+            backdrop-filter: blur(10px); /* Frosted glass effect */
+            padding: 20px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-container h2 {
+            font-size: 1.8rem;  /* Reduced font size for the heading */
+            color: #0066cc;
+            margin-bottom: 15px;  /* Reduced margin for a more compact layout */
+        }
+
+        .form-control {
+            border-radius: 5px;
+            border: 2px solid #0066cc;
+            margin-bottom: 15px;
+            padding: 15px;
+            font-size: 1.1rem;
+        }
+
+        .btn-primary {
+            background-color: #0066cc;
+            border-color: #0066cc;
+            padding: 12px;
+            font-size: 1.2rem;
+            width: 100%;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #0055b3;
+            border-color: #0055b3;
+        }
+
+        .alert {
+            margin-top: 10px;
+            font-size: 1rem;
+        }
+
+        /* Footer Styles */
+        footer {
+            background-color: #2d2d2d;
+            color: #ccc;
+            text-align: center;
+            padding: 20px 0;
+            width: 100%;
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: auto;
+        }
+
+        footer p {
+            font-size: 1rem;
+        }
+
+        /* Improved Select Action Styles */
+        .form-group select {
+            border-radius: 5px;
+            border: 2px solid #0066cc;
+            background-color: #fff;
+            color: #333;
+            padding: 8px 10px;  /* Increased padding for a more clickable dropdown */
+            font-size: 1.2rem;    /* Increased font size for better readability */
+            width: 100%;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            box-sizing: border-box; /* Ensure padding is included in width calculation */
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: #00cc99;
+            box-shadow: 0 0 8px rgba(0, 204, 153, 0.7); /* More pronounced glow on focus */
+        }
+
+        .form-group select:hover {
+            border-color: #0055b3;
+        }
+
+        /* Button Container */
+        .button-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        /* Common Styles for Both Buttons */
+        .btn-go-home {
+            display: inline-block;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-go-home:hover {
+            background-color: #0055b3;
+        }
+
+        .btn-go-home i {
+            margin-right: 8px;
+        }
+
+        /* Optional: If you want the button to change on dark mode */
+        .dark-mode .btn-go-home {
+            background-color: #333;
+            color: white;
+        }
+
+        .dark-mode .btn-go-home:hover {
+            background-color: #444;
+        }
+
+        /* Button Styles */
+        .btn-primary {
+            background-color: #0066cc;
+            border-color: #0066cc;
+            padding: 14px;  /* Adjust padding for a better clickable area */
+            font-size: 1.2rem;  /* Slight increase in font size for the button */
+            width: 100%;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #0055b3;
+            border-color: #0055b3;
+            transform: translateY(-2px); /* Slightly lift the button on hover */
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2.2rem;
+            }
+
+            .login-container {
+                padding: 20px;
+            }
+
+            .form-control {
+                padding: 12px;
+            }
+            .form-group select {
+                padding: 10px 12px;
+                font-size: 1rem;
+            }
+            .btn-primary {
+                padding: 10px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Dark Mode Styles */
+        .dark-mode {
+            background-color: #121212;
+            color: #eaeaea;
+        }
+
+        .dark-mode header {
+            background: linear-gradient(135deg, #0055b3, #00b385);
+        }
+
+        .dark-mode .login-container {
+            background-color: #1e1e1e;
+            color: #eaeaea;
+            border: 1px solid #333;
+        }
+
+        .dark-mode .form-control {
+            background-color: #333;
+            color: #eaeaea;
+            border-color: #00b385;
+        }
+
+        .dark-mode .btn-primary {
+            background-color: #333;
+            border-color: #00b385;
+        }
+
+        .dark-mode .btn-primary:hover {
+            background-color: #444;
+            border-color: #00b385;
+        }
+
+        .dark-mode footer {
+            background-color: #1a1a1a;
+            color: #777;
+        }
+
+        .dark-mode .alert {
+            background-color: #444;
+            color: #eaeaea;
+        }
+
+        /* Dark Mode Toggle Button */
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: transparent;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .dark-mode-toggle:hover {
+            color: #00b385;
+        }
+    </style>
+</head>
+<body>
+    <!-- Video Background -->
+    <video class="background-video" autoplay muted loop>
+        <source src="{{ url_for('static', filename='videos/wallpaper.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <!-- Dark Mode Toggle Button -->
+    <button class="dark-mode-toggle" onclick="toggleDarkMode()" aria-label="Toggle Dark Mode">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <!-- Header -->
+    <header>
+        <h1>Face Recognition Attendance System</h1>
+    </header>
+
+    <!-- Login Form -->
+    <div class="login-container">
+        <h2 class="text-center mb-4">ADMIN LOGIN</h2>
+        <!-- Display error message if any -->
+        {% if error %}
+            <div class="alert alert-danger">
+                {{ error }}
+            </div>
+        {% endif %}
+        
+        <!-- Login form -->
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="username" placeholder="Enter username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required>
+            </div>
+            <div class="form-group">
+                <label for="action">Select Action</label>
+                <select class="form-control" id="action" name="action" required>
+                    <option value="">Choose an action</option>
+                    <option value="register">Register Face</option>
+                    <option value="delete">Delete Face</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+    </div>
+
+    <div class="button-container">
+        <!-- Go to Home Button -->
+        <a href="/" class="btn-go-home">
+            <i class="fas fa-home"></i> Go to Home
+        </a>
+        
+        <!-- Dark Mode Toggle Button -->
+        <a href="javascript:void(0);" class="btn-go-home" onclick="toggleDarkMode()" title="Toggle Dark Mode" aria-label="Toggle Dark Mode">
+            <i class="fas fa-moon"></i> Toggle Dark Mode
+        </a>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 Face Recognition Attendance System | Developed by Debmalya Ray</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        // Prevent the back button
+        window.history.pushState(null, document.title, window.location.href);
+        window.onpopstate = function () {
+            window.history.pushState(null, document.title, window.location.href);
+        };
+
+        // Toggle Dark Mode and persist preference in localStorage
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode') ? 'enabled' : 'disabled');
+        }
+
+        // Apply Dark Mode on page load if previously enabled
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+    
+</body>
+</html>
+
+
+
